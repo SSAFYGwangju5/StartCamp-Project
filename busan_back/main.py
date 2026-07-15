@@ -56,7 +56,8 @@ def preload_data():
                             addr1=item.get("addr1", ""),[cite: 2]
                             addr2=item.get("addr2", ""),[cite: 2]
                             tel=item.get("tel", ""),[cite: 2]
-                            mapx=mx, mapy=my,
+                            mapx=mx,                          # 키워드 인자 선언 확인
+                            mapy=my,                          # 반드시 앞에 'mapy=' 가 누락되지 않았는지 체크!
                             firstimage=item.get("firstimage", "")[cite: 2]
                         )
                         db.merge(loc)
