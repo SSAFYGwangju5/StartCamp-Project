@@ -2,3 +2,7 @@
 server.log
 server.err.log
 node_modules/
+backend/.venv/
+backend/localhub.db
+__pycache__/
+*.pyc

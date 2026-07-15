@@ -24,14 +24,14 @@ textarea {
 }
 
 .hero {
-  min-height: 260px;
+  min-height: 220px;
   display: flex;
   align-items: end;
   padding: 32px;
   color: white;
   background:
-    linear-gradient(90deg, rgba(13, 38, 43, 0.82), rgba(13, 38, 43, 0.18)),
-    url("https://tong.visitkorea.or.kr/cms/resource/39/4055739_image2_1.png") center/cover;
+    linear-gradient(90deg, rgba(10, 28, 33, 0.78), rgba(10, 28, 33, 0.2)),
+    url("https://tong.visitkorea.or.kr/cms/resource/34/3090534_image2_1.JPG") center 54%/cover;
   border: 1px solid #d7dfdb;
   border-radius: 8px;
 }
@@ -49,7 +49,8 @@ textarea {
 }
 
 .hero .eyebrow {
-  color: #91f3dd;
+  color: #b9f7eb;
+  letter-spacing: 0.08em;
 }
 
 h1,
@@ -59,9 +60,9 @@ p {
 }
 
 h1 {
-  margin-bottom: 12px;
-  font-size: clamp(32px, 5vw, 56px);
-  line-height: 1.05;
+  margin-bottom: 10px;
+  font-size: 42px;
+  line-height: 1.12;
 }
 
 h2 {
@@ -79,7 +80,8 @@ h2 {
 .tab-button,
 .chat-form button,
 .write-button,
-.secondary-button {
+.secondary-button,
+.danger-button {
   min-height: 44px;
   border: 1px solid #9aa8a1;
   border-radius: 8px;
@@ -99,6 +101,12 @@ h2 {
 .secondary-button {
   background: #ffffff;
   color: #17211d;
+}
+
+.danger-button {
+  border-color: #d45d4c;
+  background: #d45d4c;
+  color: #ffffff;
 }
 
 .content-layout {
@@ -127,6 +135,52 @@ h2 {
   margin-bottom: 20px;
 }
 
+.list-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  min-height: 38px;
+  border: 1px solid #b8c8c1;
+  border-radius: 999px;
+  padding: 0 14px;
+  background: #ffffff;
+  color: #33423c;
+  cursor: pointer;
+}
+
+.filter-chip.active {
+  border-color: #0f7c70;
+  background: #e5f6f2;
+  color: #0f6f66;
+  font-weight: 700;
+}
+
+.search-box input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #cfdad5;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.result-summary {
+  grid-column: 1 / -1;
+  margin: -4px 0 0;
+  color: #607069;
+  font-size: 13px;
+}
+
 .count-label {
   margin: 0;
   color: #607069;
@@ -146,64 +200,6 @@ h2 {
     repeating-linear-gradient(90deg, #dbe7e3 0 1px, transparent 1px 56px);
   color: #476057;
   text-align: center;
-}
-
-.mini-map {
-  position: relative;
-  min-height: 340px;
-  margin-bottom: 18px;
-  overflow: hidden;
-  border: 1px solid #cfdad5;
-  border-radius: 8px;
-  background:
-    radial-gradient(circle at 76% 28%, rgba(42, 148, 171, 0.26), transparent 18%),
-    linear-gradient(135deg, #e4efe8 0 58%, #cce7ed 58% 100%);
-}
-
-.mini-map::before {
-  content: "";
-  position: absolute;
-  inset: 48px 15% 44px 10%;
-  border-radius: 47% 53% 41% 59%;
-  background: #f7fbf5;
-  box-shadow: inset 0 0 0 1px #bfd2c8;
-}
-
-.mini-map::after {
-  content: "";
-  position: absolute;
-  left: 20%;
-  top: 17%;
-  width: 55%;
-  height: 68%;
-  border: 2px dashed rgba(15, 124, 112, 0.24);
-  border-radius: 45%;
-}
-
-.map-water {
-  position: absolute;
-  right: 18px;
-  bottom: 14px;
-  color: #2c7587;
-  font-weight: 700;
-  letter-spacing: 0;
-}
-
-.map-marker {
-  position: absolute;
-  z-index: 2;
-  width: 14px;
-  height: 14px;
-  transform: translate(-50%, -50%);
-  border: 2px solid #ffffff;
-  border-radius: 999px;
-  background: #f05a3d;
-  box-shadow: 0 2px 8px rgba(23, 33, 29, 0.24);
-  cursor: pointer;
-}
-
-.map-marker:hover {
-  background: #0f7c70;
 }
 
 .card-grid {
@@ -463,12 +459,18 @@ h2 {
   }
 
   .hero {
-    min-height: 220px;
+    min-height: 180px;
     padding: 24px;
   }
 
+  h1 {
+    font-size: 32px;
+  }
+
+
   .category-tabs,
-  .content-layout {
+  .content-layout,
+  .list-controls {
     grid-template-columns: 1fr;
   }
 

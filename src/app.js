@@ -1,8 +1,22 @@
-const DATA_FILES = {
-  spots: "./busan/부산_관광지.json",
-  events: "./busan/부산_축제공연행사.json",
-  courses: "./busan/부산_여행코스.json",
+const TOUR_API_CATEGORIES = {
+  tourist: "tourist",
+  culture: "culture",
+  lodging: "lodging",
+  shopping: "shopping",
+  sports: "sports",
+  events: "events",
+  courses: "courses",
 };
+
+const API_BASE_URL = "http://127.0.0.1:8000";
+
+const SPOT_CATEGORIES = [
+  { id: "tourist", label: "관광지" },
+  { id: "culture", label: "문화시설" },
+  { id: "lodging", label: "숙박" },
+  { id: "shopping", label: "쇼핑" },
+  { id: "sports", label: "레포츠" },
+];
 
 const VIEW_META = {
   spots: {
@@ -48,27 +62,45 @@ const defaultPosts = [
 
 const state = {
   currentView: "spots",
+  spotCategory: "tourist",
+  searchKeyword: "",
   cache: {},
   currentItems: [],
-  posts: loadPosts(),
+  posts: [],
 };
 
-function loadPosts() {
-  const savedPosts = localStorage.getItem("busan-localhub-posts");
-
-  if (!savedPosts) {
-    return defaultPosts;
+function formatPostDate(value) {
+  if (!value) {
+    return "-";
   }
-
-  try {
-    return JSON.parse(savedPosts);
-  } catch {
-    return defaultPosts;
-  }
+  return value.slice(0, 10);
 }
 
-function savePosts() {
-  localStorage.setItem("busan-localhub-posts", JSON.stringify(state.posts));
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    let message = "요청을 처리하지 못했습니다.";
+    try {
+      const error = await response.json();
+      message = error.detail || message;
+    } catch {
+      // Keep default message when the server does not return JSON.
+    }
+    throw new Error(message);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
 }
 
 const viewKicker = document.querySelector("#viewKicker");
@@ -81,17 +113,15 @@ const chatInput = document.querySelector("#chatInput");
 const chatLog = document.querySelector("#chatLog");
 
 async function loadData(view) {
-  if (state.cache[view]) {
-    return state.cache[view];
+  const cacheKey = view === "spots" ? `${view}:${state.spotCategory}` : view;
+
+  if (state.cache[cacheKey]) {
+    return state.cache[cacheKey];
   }
 
-  const response = await fetch(DATA_FILES[view]);
-  if (!response.ok) {
-    throw new Error(`${view} 데이터를 불러오지 못했습니다.`);
-  }
-
-  const data = await response.json();
-  state.cache[view] = data;
+  const category = view === "spots" ? state.spotCategory : TOUR_API_CATEGORIES[view];
+  const data = await apiRequest(`/api/tour/${category}`);
+  state.cache[cacheKey] = data;
   return data;
 }
 
@@ -117,46 +147,44 @@ function getValidPoints(items) {
     .filter((item) => Number.isFinite(item.x) && Number.isFinite(item.y));
 }
 
-function renderMiniMap(items) {
-  const points = getValidPoints(items).slice(0, 60);
+function filterItems(items) {
+  const keyword = state.searchKeyword.trim().toLowerCase();
 
-  if (!points.length) {
-    return `
-      <div class="map-placeholder">
-        <strong>지도 영역</strong><br />
-        표시할 좌표 정보가 없습니다.
-      </div>
-    `;
+  if (!keyword) {
+    return items;
   }
 
-  const minX = Math.min(...points.map((item) => item.x));
-  const maxX = Math.max(...points.map((item) => item.x));
-  const minY = Math.min(...points.map((item) => item.y));
-  const maxY = Math.max(...points.map((item) => item.y));
+  return items.filter((item) => {
+    const searchableText = [item.title, item.addr1, item.tel, item.eventplace]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return searchableText.includes(keyword);
+  });
+}
 
-  const markers = points
-    .map((item) => {
-      const left = ((item.x - minX) / (maxX - minX || 1)) * 86 + 7;
-      const top = (1 - (item.y - minY) / (maxY - minY || 1)) * 78 + 11;
-
-      return `
-        <button
-          class="map-marker"
-          type="button"
-          style="left:${left}%; top:${top}%"
-          data-action="place-detail"
-          data-item-index="${item.index}"
-          title="${item.title}"
-          aria-label="${item.title} 상세 보기"
-        ></button>
-      `;
-    })
-    .join("");
+function renderSpotControls(totalCount, filteredCount) {
+  const categoryButtons = SPOT_CATEGORIES.map(
+    (category) => `
+      <button
+        class="filter-chip ${state.spotCategory === category.id ? "active" : ""}"
+        type="button"
+        data-action="spot-category"
+        data-category="${category.id}"
+      >
+        ${category.label}
+      </button>
+    `,
+  ).join("");
 
   return `
-    <div class="mini-map" aria-label="부산 좌표 기반 마커 지도">
-      <div class="map-water">Busan</div>
-      ${markers}
+    <div class="list-controls">
+      <div class="filter-chips">${categoryButtons}</div>
+      <label class="search-box">
+        <span class="sr-only">장소 검색</span>
+        <input id="searchInput" type="search" value="${state.searchKeyword}" placeholder="장소명 또는 주소 검색" />
+      </label>
+      <p class="result-summary">전체 ${totalCount.toLocaleString()}건 중 ${filteredCount.toLocaleString()}건</p>
     </div>
   `;
 }
@@ -186,7 +214,6 @@ function renderCards(items) {
     .join("");
 
   return `
-    ${renderMiniMap(items)}
     <div class="card-grid">${cards}</div>
   `;
 }
@@ -199,7 +226,8 @@ function formatDate(value) {
 }
 
 function renderEvents(items) {
-  const rows = items
+  const filteredItems = filterItems(items);
+  const rows = filteredItems
     .slice(0, 15)
     .map(
       (item, index) => `
@@ -218,6 +246,13 @@ function renderEvents(items) {
     .join("");
 
   return `
+    <div class="list-controls">
+      <label class="search-box">
+        <span class="sr-only">행사 검색</span>
+        <input id="searchInput" type="search" value="${state.searchKeyword}" placeholder="행사명 또는 장소 검색" />
+      </label>
+      <p class="result-summary">전체 ${items.length.toLocaleString()}건 중 ${filteredItems.length.toLocaleString()}건</p>
+    </div>
     <table class="data-table">
       <thead>
         <tr>
@@ -227,7 +262,7 @@ function renderEvents(items) {
           <th>문의</th>
         </tr>
       </thead>
-      <tbody>${rows}</tbody>
+      <tbody>${rows || `<tr><td colspan="4">검색 결과가 없습니다.</td></tr>`}</tbody>
     </table>
   `;
 }
@@ -296,7 +331,7 @@ function renderCommunity() {
             </button>
           </td>
           <td>${post.author}</td>
-          <td>${post.createdAt}</td>
+          <td>${formatPostDate(post.created_at)}</td>
           <td>${post.views}</td>
         </tr>
       `,
@@ -316,39 +351,58 @@ function renderCommunity() {
           <th>조회</th>
         </tr>
       </thead>
-      <tbody>${rows}</tbody>
+      <tbody>${rows || `<tr><td colspan="4">게시글이 없습니다.</td></tr>`}</tbody>
     </table>
   `;
 }
 
-function renderPostDetail(postId) {
-  const post = state.posts.find((item) => item.id === Number(postId));
+async function loadCommunity() {
+  setHeader("community", "불러오는 중");
+  viewBody.innerHTML = `<div class="map-placeholder">게시글을 불러오고 있습니다.</div>`;
 
-  if (!post) {
+  try {
+    state.posts = await apiRequest("/api/posts");
+    setHeader("community", `${state.posts.length}개 글`);
+    viewBody.innerHTML = renderCommunity();
+  } catch (error) {
+    setHeader("community", "API 연결 필요");
+    viewBody.innerHTML = `
+      <div class="empty-state">
+        FastAPI 서버에 연결할 수 없습니다.<br />
+        backend에서 <strong>uvicorn app.main:app --reload --port 8000</strong>을 실행해 주세요.
+      </div>
+    `;
+  }
+}
+
+async function renderPostDetail(postId) {
+  try {
+    const post = await apiRequest(`/api/posts/${postId}`);
+
+    setHeader("community", "게시글 상세");
+    viewBody.innerHTML = `
+      <article class="post-detail">
+        <div class="post-detail-header">
+          <h3>${post.title}</h3>
+          <p>${post.author} · ${formatPostDate(post.created_at)} · 조회 ${post.views}</p>
+        </div>
+        <div class="post-content">${post.content}</div>
+        <div class="community-actions">
+          <button class="secondary-button" type="button" data-action="list">목록으로</button>
+          <button class="secondary-button" type="button" data-action="edit-post" data-post-id="${post.id}">수정</button>
+          <button class="danger-button" type="button" data-action="delete-post" data-post-id="${post.id}">삭제</button>
+        </div>
+      </article>
+    `;
+  } catch (error) {
     setHeader("community", "게시글 없음");
     viewBody.innerHTML = `
       <div class="empty-state">
-        게시글을 찾을 수 없습니다.
+        ${error.message}
         <button class="write-button" type="button" data-action="list">목록으로</button>
       </div>
     `;
-    return;
   }
-
-  post.views += 1;
-  setHeader("community", "게시글 상세");
-  viewBody.innerHTML = `
-    <article class="post-detail">
-      <div class="post-detail-header">
-        <h3>${post.title}</h3>
-        <p>${post.author} · ${post.createdAt} · 조회 ${post.views}</p>
-      </div>
-      <div class="post-content">${post.content}</div>
-      <div class="community-actions">
-        <button class="write-button" type="button" data-action="list">목록으로</button>
-      </div>
-    </article>
-  `;
 }
 
 function renderWriteForm() {
@@ -375,36 +429,98 @@ function renderWriteForm() {
   `;
 }
 
-function createPost(form) {
+async function renderEditForm(postId) {
+  const post = await apiRequest(`/api/posts/${postId}`);
+
+  setHeader("community", "게시글 수정");
+  viewBody.innerHTML = `
+    <form class="write-form" id="editForm" data-post-id="${post.id}">
+      <label>
+        제목
+        <input name="title" type="text" value="${post.title}" required />
+      </label>
+      <label>
+        비밀번호
+        <input name="password" type="password" placeholder="게시글 비밀번호" required />
+      </label>
+      <label>
+        내용
+        <textarea name="content" required>${post.content}</textarea>
+      </label>
+      <div class="community-actions">
+        <button class="secondary-button" type="button" data-action="post-detail" data-post-id="${post.id}">취소</button>
+        <button class="write-button" type="submit">저장</button>
+      </div>
+    </form>
+  `;
+}
+
+async function createPost(form) {
   const formData = new FormData(form);
-  const post = {
-    id: Date.now(),
+  const payload = {
     title: String(formData.get("title")).trim(),
-    author: "익명",
-    createdAt: new Date().toISOString().slice(0, 10),
-    views: 0,
     password: String(formData.get("password")).trim(),
     content: String(formData.get("content")).trim(),
   };
 
-  if (!post.title || !post.password || !post.content) {
+  if (!payload.title || !payload.password || !payload.content) {
     return;
   }
 
-  state.posts = [post, ...state.posts];
-  savePosts();
+  const post = await apiRequest("/api/posts", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
   renderPostDetail(post.id);
+}
+
+async function updatePost(form) {
+  const postId = Number(form.dataset.postId);
+  const formData = new FormData(form);
+  const payload = {
+    title: String(formData.get("title")).trim(),
+    password: String(formData.get("password")).trim(),
+    content: String(formData.get("content")).trim(),
+  };
+
+  if (!payload.title || !payload.password || !payload.content) {
+    return;
+  }
+
+  const post = await apiRequest(`/api/posts/${postId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  renderPostDetail(post.id);
+}
+
+async function deletePost(postId) {
+  const password = window.prompt("게시글 비밀번호를 입력하세요.");
+  if (password === null) {
+    return;
+  }
+
+  const confirmed = window.confirm("게시글을 삭제할까요?");
+  if (!confirmed) {
+    return;
+  }
+
+  await apiRequest(`/api/posts/${postId}`, {
+    method: "DELETE",
+    body: JSON.stringify({ password }),
+  });
+  renderView("community");
 }
 
 async function renderView(view) {
   state.currentView = view;
+  state.searchKeyword = "";
   tabButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.view === view);
   });
 
   if (view === "community") {
-    setHeader(view, `${state.posts.length}개 글`);
-    viewBody.innerHTML = renderCommunity();
+    loadCommunity();
     return;
   }
 
@@ -414,9 +530,16 @@ async function renderView(view) {
   try {
     const data = await loadData(view);
     const items = data.items || [];
-    state.currentItems = items;
-    setHeader(view, `${items.length.toLocaleString()}건`);
-    viewBody.innerHTML = view === "events" ? renderEvents(items) : renderCards(items);
+    const filteredItems = filterItems(items);
+    state.currentItems = filteredItems;
+    setHeader(view, `${filteredItems.length.toLocaleString()}건`);
+
+    if (view === "spots") {
+      viewBody.innerHTML = `${renderSpotControls(items.length, filteredItems.length)}${renderCards(filteredItems)}`;
+      return;
+    }
+
+    viewBody.innerHTML = view === "events" ? renderEvents(items) : renderCards(filteredItems);
   } catch (error) {
     viewCount.textContent = "오류";
     viewBody.innerHTML = `<div class="map-placeholder">${error.message}</div>`;
@@ -435,7 +558,7 @@ tabButtons.forEach((button) => {
   button.addEventListener("click", () => renderView(button.dataset.view));
 });
 
-viewBody.addEventListener("click", (event) => {
+viewBody.addEventListener("click", async (event) => {
   const button = event.target.closest("button");
   if (!button) {
     return;
@@ -449,12 +572,38 @@ viewBody.addEventListener("click", (event) => {
     renderPlaceDetail(button.dataset.itemIndex);
   }
 
+  if (button.dataset.action === "spot-category") {
+    state.spotCategory = button.dataset.category;
+    state.searchKeyword = "";
+    renderView("spots");
+  }
+
   if (button.dataset.action === "back-current") {
     renderView(state.currentView);
   }
 
   if (button.dataset.action === "detail") {
-    renderPostDetail(button.dataset.postId);
+    await renderPostDetail(button.dataset.postId);
+  }
+
+  if (button.dataset.action === "post-detail") {
+    await renderPostDetail(button.dataset.postId);
+  }
+
+  if (button.dataset.action === "edit-post") {
+    try {
+      await renderEditForm(button.dataset.postId);
+    } catch (error) {
+      window.alert(error.message);
+    }
+  }
+
+  if (button.dataset.action === "delete-post") {
+    try {
+      await deletePost(button.dataset.postId);
+    } catch (error) {
+      window.alert(error.message);
+    }
   }
 
   if (button.dataset.action === "list") {
@@ -462,15 +611,42 @@ viewBody.addEventListener("click", (event) => {
   }
 });
 
+viewBody.addEventListener("input", (event) => {
+  if (event.target.id !== "searchInput") {
+    return;
+  }
+
+  state.searchKeyword = event.target.value;
+  const data = state.cache[state.currentView === "spots" ? `spots:${state.spotCategory}` : state.currentView];
+  const items = data?.items || [];
+  const filteredItems = filterItems(items);
+  state.currentItems = filteredItems;
+  setHeader(state.currentView, `${filteredItems.length.toLocaleString()}건`);
+
+  if (state.currentView === "spots") {
+    viewBody.innerHTML = `${renderSpotControls(items.length, filteredItems.length)}${renderCards(filteredItems)}`;
+    document.querySelector("#searchInput")?.focus();
+  }
+
+  if (state.currentView === "events") {
+    viewBody.innerHTML = renderEvents(items);
+    document.querySelector("#searchInput")?.focus();
+  }
+});
+
 viewBody.addEventListener("submit", (event) => {
   event.preventDefault();
 
   if (event.target.id === "postForm") {
-    createPost(event.target);
+    createPost(event.target).catch((error) => window.alert(error.message));
+  }
+
+  if (event.target.id === "editForm") {
+    updatePost(event.target).catch((error) => window.alert(error.message));
   }
 });
 
-chatForm.addEventListener("submit", (event) => {
+chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const prompt = chatInput.value.trim();
   if (!prompt) {
@@ -479,7 +655,17 @@ chatForm.addEventListener("submit", (event) => {
 
   addChatMessage(prompt, "user");
   chatInput.value = "";
-  addChatMessage("답변 생성중... FastAPI /api/chat 연결 예정입니다.", "bot");
+  const loadingMessage = addChatMessage("답변 생성중...", "bot");
+
+  try {
+    const data = await apiRequest("/api/chat", {
+      method: "POST",
+      body: JSON.stringify({ message: prompt }),
+    });
+    loadingMessage.textContent = data.answer;
+  } catch (error) {
+    loadingMessage.textContent = `챗봇 API에 연결할 수 없습니다. ${error.message}`;
+  }
 });
 
 renderView("spots");
