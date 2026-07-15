@@ -155,6 +155,50 @@ docs/       기획 문서
 legacy/     초기 HTML/CSS/JS 프로토타입
 ```
 
+## 배포 방법
+
+### Backend(Render)
+
+Render에서 Web Service를 생성합니다.
+
+| 항목 | 값 |
+|---|---|
+| Root Directory | `backend` |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+
+환경변수:
+
+```text
+GEMINI_API_KEY=...
+MODEL_NAME=gemini-2.5-flash
+CORS_ORIGINS=https://your-netlify-site.netlify.app
+```
+
+배포 후 확인:
+
+```text
+https://your-render-api.onrender.com/health
+```
+
+### Frontend(Netlify)
+
+Netlify에서 GitHub 저장소를 연결합니다.
+
+| 항목 | 값 |
+|---|---|
+| Base directory | `frontend` |
+| Build command | `npm run build` |
+| Publish directory | `frontend/dist` |
+
+환경변수:
+
+```text
+VITE_API_BASE_URL=https://your-render-api.onrender.com
+```
+
+배포 후 `CORS_ORIGINS`에 Netlify 주소를 추가하고 백엔드를 재배포합니다.
+
 ## 데이터 출처
 
 이 서비스는 한국관광공사 Tour API(TourAPI 4.0)의 데이터를 활용하였습니다.
