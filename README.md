@@ -19,6 +19,12 @@
 - 챗봇 UI 및 `/api/chat` 연결
 - 데이터 출처/라이선스 표기
 
+## 배포 주소
+
+- Frontend(Netlify): https://iridescent-souffle-bb2e4f.netlify.app/
+- Backend(Render): https://busan-localhub-api.onrender.com
+- Backend health check: https://busan-localhub-api.onrender.com/health
+
 ## 실행 방법
 
 서버는 2개를 실행합니다.
@@ -44,7 +50,7 @@ uvicorn app.main:app --port 8000
 배포 시 프론트 도메인은 환경변수로 허용합니다.
 
 ```text
-CORS_ORIGINS=https://your-netlify-site.netlify.app
+CORS_ORIGINS=https://iridescent-souffle-bb2e4f.netlify.app
 ```
 
 확인:
@@ -77,7 +83,7 @@ npm.cmd run dev
 배포 시 백엔드 API 주소는 환경변수로 설정합니다.
 
 ```text
-VITE_API_BASE_URL=https://your-render-api.onrender.com
+VITE_API_BASE_URL=https://busan-localhub-api.onrender.com
 ```
 
 접속:
@@ -172,13 +178,13 @@ Render에서 Web Service를 생성합니다.
 ```text
 GEMINI_API_KEY=...
 MODEL_NAME=gemini-2.5-flash
-CORS_ORIGINS=https://your-netlify-site.netlify.app
+CORS_ORIGINS=https://iridescent-souffle-bb2e4f.netlify.app
 ```
 
 배포 후 확인:
 
 ```text
-https://your-render-api.onrender.com/health
+https://busan-localhub-api.onrender.com/health
 ```
 
 ### Frontend(Netlify)
@@ -194,7 +200,7 @@ Netlify에서 GitHub 저장소를 연결합니다.
 환경변수:
 
 ```text
-VITE_API_BASE_URL=https://your-render-api.onrender.com
+VITE_API_BASE_URL=https://busan-localhub-api.onrender.com
 ```
 
 배포 후 `CORS_ORIGINS`에 Netlify 주소를 추가하고 백엔드를 재배포합니다.
