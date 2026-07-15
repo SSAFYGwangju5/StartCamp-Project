@@ -17,12 +17,12 @@ class Location(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     contentid = Column(String(50), unique=True, index=True)
-    contenttypeid = Column(String(10))[cite: 2]
+    contenttypeid = Column(String(10))
     content_type_name = Column(String(50))  # 관광지, 음식점 등
-    title = Column(String(200), index=True)[cite: 2]
-    addr1 = Column(String(300))[cite: 2]
-    addr2 = Column(String(200))[cite: 2]
-    tel = Column(String(100))[cite: 2]
-    mapx = Column(Float)[cite: 2]
-    mapy = Column(Float)[cite: 2]
-    firstimage = Column(String(500))[cite: 2]
+    title = Column(String(200), index=True)
+    addr1 = Column(String(300))
+    addr2 = Column(String(200))
+    tel = Column(String(100))
+    mapx = Column(Float)
+    mapy = Column(Float)
+    firstimage = Column(String(500))

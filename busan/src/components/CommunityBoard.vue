@@ -96,7 +96,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, computed } from 'vue';
-import { Post } from '../types';
+import type { Post } from '../types';
 
 export default defineComponent({
   name: 'CommunityBoard',
