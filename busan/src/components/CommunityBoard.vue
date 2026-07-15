@@ -1,102 +1,110 @@
 <template>
   <div class="space-y-6">
-    <!-- 1. 리스트 및 검색 화면 -->
+    <!-- 1. 리스트 검색 및 툴바 필터 제어부 -->
     <div v-if="viewMode === 'list'" class="space-y-4">
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
-        <div class="relative w-full sm:max-w-md flex gap-2">
-          <input v-model="searchQuery" @keyup.enter="fetchPosts" type="text" placeholder="검색어를 입력하고 엔터를 누르세요" class="w-full border border-slate-200 px-4 py-2.5 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
-          <button @click="fetchPosts" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors">검색</button>
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-900/60 border border-slate-800/80 p-4 rounded-2xl shadow-xl">
+        <div class="relative w-full md:max-w-md flex gap-2">
+          <input v-model="searchQuery" @keyup.enter="fetchPosts" type="text" placeholder="검색하고 싶은 키워드를 기입하세요..." class="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all placeholder:text-slate-600" />
+          <button @click="fetchPosts" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-500 transition-colors">검색</button>
         </div>
-        <button @click="openWrite" class="w-full sm:w-auto bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 shadow-sm shadow-blue-500/10 transition-all flex items-center justify-center gap-1">+ 새 게시글 작성</button>
+        <button @click="openWrite" class="w-full md:w-auto bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:opacity-90 shadow-md shadow-blue-500/10 transition-all flex items-center justify-center gap-1.5">+ 에세이 남기기</button>
       </div>
 
-      <!-- 리스트 컨테이너 -->
-      <div class="overflow-x-auto rounded-xl border border-slate-100 shadow-sm bg-white">
-        <table class="w-full text-left border-collapse text-sm">
-          <thead>
-            <tr class="bg-slate-50/70 text-slate-500 font-bold border-b border-slate-100">
-              <th class="py-3.5 px-6 w-20 text-center">ID</th>
-              <th class="py-3.5 px-6">글 제목</th>
-              <th class="py-3.5 px-6 w-24 text-center">조회수</th>
-              <th class="py-3.5 px-6 w-36 text-center">작성시간</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 text-slate-700">
-            <tr v-for="post in posts" :key="post.id" class="hover:bg-slate-50/50 cursor-pointer transition-colors" @click="viewDetail(post.id)">
-              <td class="py-4 px-6 text-center text-slate-400 font-mono text-xs">{{ post.id }}</td>
-              <td class="py-4 px-6 font-semibold text-slate-900 group-hover:text-blue-600 max-w-lg truncate">{{ post.title }}</td>
-              <td class="py-4 px-6 text-center"><span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-xs font-medium">{{ post.view_count }}</span></td>
-              <td class="py-4 px-6 text-center text-slate-400 text-xs font-light">{{ formatDate(post.created_at) }}</td>
-            </tr>
-            <tr v-if="posts.length === 0">
-              <td colspan="4" class="text-center py-12 text-slate-400 font-medium">검색 조건에 맞는 커뮤니티 대화가 비어 있습니다[cite: 1].</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- 리스트 섹션: 컴포넌트를 깔끔하게 담는 다크 글래스 가둠판 -->
+      <div class="bg-slate-900/30 border border-slate-800/60 rounded-2xl overflow-hidden shadow-2xl">
+        <div class="hidden sm:grid grid-cols-12 px-6 py-3.5 bg-slate-900/80 border-b border-slate-800 text-xs font-bold text-slate-400 tracking-wider">
+          <div class="col-span-1 text-center">INDEX</div>
+          <div class="col-span-7">게시글 스레드 제목</div>
+          <div class="col-span-2 text-center">HIT</div>
+          <div class="col-span-2 text-center">DATE</div>
+        </div>
+
+        <div class="divide-y divide-slate-800/60">
+          <div v-for="post in posts" :key="post.id" @click="viewDetail(post.id)" class="grid grid-cols-1 sm:grid-cols-12 px-6 py-4 items-center hover:bg-slate-800/30 cursor-pointer transition-colors group text-sm">
+            <div class="hidden sm:block col-span-1 text-center font-mono text-xs text-slate-600">{{ post.id }}</div>
+            <div class="col-span-12 sm:col-span-7 font-semibold text-slate-200 group-hover:text-blue-400 transition-colors truncate pr-4 py-1 sm:py-0">
+              <span class="sm:hidden text-xs font-bold text-blue-500 mr-2">#{{ post.id }}</span>
+              {{ post.title }}
+            </div>
+            <div class="col-span-6 sm:col-span-2 sm:text-center flex sm:justify-center items-center text-xs text-slate-400 gap-1">
+              <span class="sm:hidden text-slate-600 mr-1">조회수:</span>
+              <span class="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-400 rounded-md font-medium font-mono">{{ post.view_count }}</span>
+            </div>
+            <div class="col-span-6 sm:col-span-2 text-right sm:text-center text-xs text-slate-500 font-light font-mono">{{ formatDate(post.created_at) }}</div>
+          </div>
+
+          <div v-if="posts.length === 0" class="text-center py-16 text-slate-500 font-medium">
+            <div class="text-3xl mb-2">💬</div>
+            작성된 대화가 없습니다. 첫 번째 발자국을 남겨보세요.
+          </div>
+        </div>
       </div>
 
-      <!-- 미니멀한 페이지네이션 버튼 디자인 -->
+      <!-- 페이지네이션 컨트롤 디자인 고도화 -->
       <div class="flex justify-center items-center gap-4 mt-6">
-        <button :disabled="currentPage === 1" @click="changePage(currentPage - 1)" class="p-2 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 transition-colors">&larr;</button>
-        <span class="text-sm font-semibold text-slate-600">{{ currentPage }} / {{ totalPages }}</span>
-        <button :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)" class="p-2 border border-slate-200 bg-white rounded-lg hover:bg-slate-50 disabled:opacity-40 transition-colors">&rarr;</button>
+        <button :disabled="currentPage === 1" @click="changePage(currentPage - 1)" class="p-2 border border-slate-800 bg-slate-900 rounded-xl text-slate-400 hover:text-white disabled:opacity-30 transition-colors">&larr; Prev</button>
+        <span class="text-xs font-bold text-slate-400 font-mono bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">{{ currentPage }} / {{ totalPages }}</span>
+        <button :disabled="currentPage === totalPages" @click="changePage(currentPage + 1)" class="p-2 border border-slate-800 bg-slate-900 rounded-xl text-slate-400 hover:text-white disabled:opacity-30 transition-colors">Next &rarr;</button>
       </div>
     </div>
 
-    <!-- 2. 고급 본문 상세 내용 보기 조회 화면 -->
-    <div v-else-if="viewMode === 'detail' && currentPost" class="border border-slate-100 rounded-xl p-6 bg-white shadow-sm space-y-6 animate-fadeIn">
-      <div class="border-b border-slate-100 pb-4 space-y-3">
-        <h2 class="text-2xl font-black text-slate-900 leading-snug tracking-tight">{{ currentPost.title }}</h2>
-        <div class="flex flex-wrap gap-4 text-xs text-slate-400 font-light">
-          <span>작성자: <span class="font-medium text-slate-600">익명 원문</span></span>[cite: 1]
-          <span>글 번호: <span class="font-mono">{{ currentPost.id }}</span></span>
-          <span>조회수: <span>{{ currentPost.view_count }}</span></span>
-          <span>등록일: <span>{{ formatDate(currentPost.created_at) }}</span></span>
+    <!-- 2. 본문 인덱스 뷰어 상세창 -->
+    <div v-else-if="viewMode === 'detail' && currentPost" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 md:p-8 shadow-2xl space-y-6 animate-fadeIn">
+      <div class="border-b border-slate-800/80 pb-4 space-y-3">
+        <h2 class="text-2xl font-black text-white leading-snug tracking-tight">{{ currentPost.title }}</h2>
+        <div class="flex flex-wrap gap-4 text-xs font-mono text-slate-500 font-light">
+          <span>IDENTITY: <span class="font-bold text-slate-400">ANONYMOUS</span></span>
+          <span>POST_ID: <span class="text-slate-400">{{ currentPost.id }}</span></span>
+          <span>VIEWS: <span class="text-slate-400">{{ currentPost.view_count }}</span></span>
+          <span>TIMESTAMP: <span class="text-slate-400">{{ formatDate(currentPost.created_at) }}</span></span>
         </div>
       </div>
-      <div class="text-slate-800 text-sm leading-relaxed whitespace-pre-wrap min-h-64 font-normal">{{ currentPost.content }}</div>
-      <div class="flex justify-between items-center pt-6 border-t border-slate-100">
-        <button @click="viewMode = 'list'" class="px-5 py-2 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">목록으로</button>
+      <!-- 글이 길어져도 박스 안에 딱 붙어 정돈되도록 라인 높이와 폰트 크기 튜닝 -->
+      <div class="text-slate-300 text-sm md:text-base leading-relaxed whitespace-pre-wrap min-h-[240px] font-normal tracking-wide">{{ currentPost.content }}</div>
+      <div class="flex justify-between items-center pt-6 border-t border-slate-800/80">
+        <button @click="viewMode = 'list'" class="px-4 py-2 border border-slate-800 bg-slate-950 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-colors">&larr; 목록 광장으로</button>
         <div class="flex gap-2">
-          <button @click="openModal('edit')" class="bg-slate-100 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-200 transition-colors">수정</button>
-          <button @click="openModal('delete')" class="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors">삭제</button>
+          <button @click="openModal('edit')" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors">수정요청</button>
+          <button @click="openModal('delete')" class="bg-red-950/40 border border-red-900/60 text-red-400 px-4 py-2 rounded-xl text-xs font-bold hover:bg-red-900 hover:text-white transition-colors">데이터 파기</button>
         </div>
       </div>
     </div>
 
-    <!-- 3. 작성 및 수정 인풋 폼 -->
-    <div v-else-if="viewMode === 'form'" class="border border-slate-100 rounded-xl p-6 bg-white shadow-sm space-y-5 animate-fadeIn">
-      <h3 class="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">{{ formAction === 'create' ? '✍️ 새 글 남기기' : '🛠️ 내용 업데이트' }}</h3>
-      <div class="space-y-1">
-        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">글 제목</label>
-        <input v-model="formData.title" type="text" placeholder="명확하고 핵심적인 제목을 입력하세요" class="w-full border border-slate-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+    <!-- 3. 글쓰기 폼 에디터 인프라 수렴 -->
+    <div v-else-if="viewMode === 'form'" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 shadow-2xl space-y-5 animate-fadeIn">
+      <h3 class="text-md font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
+        <span>{{ formAction === 'create' ? '📝 신규 익명 타임라인 개설' : '⚙️ 타임라인 데이터 정정' }}</span>
+      </h3>
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">스레드 제목</label>
+        <input v-model="formData.title" type="text" placeholder="전하고자 하는 대화의 에센스를 한 줄로 축약하세요..." class="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all placeholder:text-slate-700" />
       </div>
-      <div class="space-y-1">
-        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">내용</label>
-        <textarea v-model="formData.content" rows="10" placeholder="부산 지역에 관한 공유 내용 및 자유 이야기를 남겨주세요." class="w-full border border-slate-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"></textarea>
+      <div class="space-y-1.5">
+        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">에세이 콘텐트</label>
+        <textarea v-model="formData.content" rows="10" placeholder="자유로운 정보, 의견, 건의 사항을 이곳에 투명하게 작성하세요..." class="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all placeholder:text-slate-700"></textarea>
       </div>
-      <div class="space-y-1 max-w-xs">
-        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">수정/삭제용 비밀번호</label>
-        <input v-model="formData.password" type="password" placeholder="비밀번호 평문 입력" class="w-full border border-slate-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+      <div class="space-y-1.5 max-w-xs">
+        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">보안 핀 검증 암호 (평문)</label>
+        <input v-model="formData.password" type="password" placeholder="4자리 이상 입력" class="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all placeholder:text-slate-700" />
       </div>
-      <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
-        <button @click="cancelForm" class="border border-slate-200 px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-colors">취소</button>
-        <button @click="submitForm" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 shadow-sm shadow-blue-500/10 transition-colors">게시글 보관</button>
+      <div class="flex justify-end gap-2 pt-4 border-t border-slate-800/80">
+        <button @click="cancelForm" class="bg-slate-950 border border-slate-800 px-5 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-colors">취소</button>
+        <button @click="submitForm" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/10 transition-colors">광장에 동기화</button>
       </div>
     </div>
 
-    <!-- 글래스모피즘이 가미된 모달 디자인 (TypeScript strict 가이드라인 준수) -->
-    <div v-if="modal.show" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-      <div class="bg-white p-6 rounded-2xl max-w-sm w-full text-center shadow-xl border border-slate-100 space-y-4">
-        <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto text-blue-600 text-xl">🔒</div>
+    <!-- 글래스모피즘 인증 모달창 -->
+    <div v-if="modal.show" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 animate-fadeIn">
+      <div class="bg-slate-900 border border-slate-800/80 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl space-y-4">
+        <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto text-blue-400 text-xl border border-blue-500/20">🔑</div>
         <div class="space-y-1">
-          <h4 class="font-bold text-base text-slate-900">비밀번호 인증</h4>
-          <p class="text-xs text-slate-400 leading-normal">의뢰서 설계에 따라 암호화 없이 평문 상태의 비밀번호를 대조합니다[cite: 1].</p>
+          <h4 class="font-bold text-base text-white">시큐리티 데이터 대조</h4>
+          <p class="text-xs text-slate-500 leading-normal">글 작성 시 부여했던 평문 패스워드 토큰을 입력하세요.</p>
         </div>
-        <input v-model="modal.password" type="password" placeholder="평문 패스워드 입력" class="w-full border border-slate-200 px-4 py-2.5 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+        <input v-model="modal.password" type="password" placeholder="비밀번호 토큰 입력" class="w-full bg-slate-950 border border-slate-800 px-4 py-2.5 rounded-xl text-sm text-center text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all" />
         <div class="flex gap-2 pt-2">
-          <button @click="modal.show = false" class="w-1/2 border border-slate-200 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-colors">닫기</button>
-          <button @click="handleModalConfirm" class="w-1/2 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 shadow-sm transition-colors">확인인증</button>
+          <button @click="modal.show = false" class="w-1/2 bg-slate-950 border border-slate-800 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition-colors">창 닫기</button>
+          <button @click="handleModalConfirm" class="w-1/2 bg-blue-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-blue-500 shadow-md transition-colors">인증실행</button>
         </div>
       </div>
     </div>
@@ -105,7 +113,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, computed } from 'vue';
-import type { Post } from '../types';  // 'verbatimModuleSyntax' 가이드라인에 따른 type-only import 명시
+import type { Post } from '../types';
 
 export default defineComponent({
   name: 'CommunityBoard',
@@ -164,7 +172,7 @@ export default defineComponent({
 
     const submitForm = async () => {
       if (!formData.value.title || !formData.value.content || !formData.value.password) {
-        alert('모든 데이터를 누락 없이 입력하세요.');
+        alert('모든 폼을 기입해 주세요.');
         return;
       }
       try {
@@ -188,7 +196,7 @@ export default defineComponent({
           if (res.ok) {
             await viewDetail(currentPost.value.id);
           } else {
-            alert('인증 비밀번호가 일치하지 않습니다[cite: 1].');
+            alert('비밀번호 검증이 실패했습니다.');
           }
         }
       } catch (err) {
@@ -223,7 +231,7 @@ export default defineComponent({
             await fetchPosts();
             viewMode.value = 'list';
           } else {
-            alert('인증 비밀번호가 올바르지 않습니다[cite: 1].');
+            alert('비밀번호가 올바르지 않습니다.');
           }
         } catch (err) {
           console.error('삭제 오류:', err);
