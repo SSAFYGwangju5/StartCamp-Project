@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import os
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -14,9 +15,18 @@ from .schemas import ChatRequest, ChatResponse, PostCreate, PostDelete, PostDeta
 
 app = FastAPI(title="Busan LocalHub API")
 
+default_origins = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "http://127.0.0.1:5174",
+    "http://localhost:5174",
+]
+env_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "").split(",") if origin.strip()]
+allowed_origins = default_origins + env_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

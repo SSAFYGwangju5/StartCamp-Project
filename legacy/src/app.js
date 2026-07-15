@@ -18,6 +18,18 @@ const SPOT_CATEGORIES = [
   { id: "sports", label: "레포츠" },
 ];
 
+const FALLBACK_IMAGES = {
+  tourist: "https://tong.visitkorea.or.kr/cms/resource/34/3090534_image2_1.JPG",
+  culture: "https://tong.visitkorea.or.kr/cms/resource/16/4055716_image2_1.png",
+  lodging: "https://tong.visitkorea.or.kr/cms/resource/69/4077869_image2_1.jpg",
+  shopping: "https://tong.visitkorea.or.kr/cms/resource/73/3543373_image2_1.jpg",
+  sports: "https://tong.visitkorea.or.kr/cms/resource/11/3495811_image2_1.jpg",
+  events: "https://tong.visitkorea.or.kr/cms/resource/92/4077792_image2_1.jpg",
+  courses: "http://tong.visitkorea.or.kr/cms/resource/83/2364283_image2_1.jpg",
+};
+
+const EXCLUDED_TITLE_KEYWORDS = ["성형외과", "의원", "주식회사"];
+
 const VIEW_META = {
   spots: {
     kicker: "관광지",
@@ -133,7 +145,21 @@ function setHeader(view, countText) {
 }
 
 function imageOrPlaceholder(item) {
-  return item.firstimage || item.firstimage2 || "";
+  const category = state.currentView === "spots" ? state.spotCategory : state.currentView;
+  return item.firstimage || item.firstimage2 || FALLBACK_IMAGES[category] || FALLBACK_IMAGES.tourist;
+}
+
+function isDisplayableItem(item) {
+  if (state.currentView !== "spots") {
+    return true;
+  }
+
+  const title = item.title || "";
+  return !EXCLUDED_TITLE_KEYWORDS.some((keyword) => title.includes(keyword));
+}
+
+function prepareItems(items) {
+  return items.filter(isDisplayableItem);
 }
 
 function getValidPoints(items) {
@@ -529,7 +555,7 @@ async function renderView(view) {
 
   try {
     const data = await loadData(view);
-    const items = data.items || [];
+    const items = prepareItems(data.items || []);
     const filteredItems = filterItems(items);
     state.currentItems = filteredItems;
     setHeader(view, `${filteredItems.length.toLocaleString()}건`);
@@ -618,7 +644,7 @@ viewBody.addEventListener("input", (event) => {
 
   state.searchKeyword = event.target.value;
   const data = state.cache[state.currentView === "spots" ? `spots:${state.spotCategory}` : state.currentView];
-  const items = data?.items || [];
+  const items = prepareItems(data?.items || []);
   const filteredItems = filterItems(items);
   state.currentItems = filteredItems;
   setHeader(state.currentView, `${filteredItems.length.toLocaleString()}건`);
