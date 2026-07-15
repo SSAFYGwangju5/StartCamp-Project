@@ -21,11 +21,23 @@
 
 ## 실행 방법
 
+서버는 2개를 실행합니다.
+
+- Backend: `http://127.0.0.1:8000`
+- Frontend: `http://127.0.0.1:5173`
+
 ### Backend
 
 ```bash
 cd backend
 pip install -r requirements.txt
+uvicorn app.main:app --port 8000
+```
+
+Git Bash를 사용하는 경우:
+
+```bash
+cd /c/Users/SSAFY/Desktop/busanproject/backend
 uvicorn app.main:app --port 8000
 ```
 
@@ -41,12 +53,25 @@ CORS_ORIGINS=https://your-netlify-site.netlify.app
 http://127.0.0.1:8000/health
 ```
 
+정상 응답:
+
+```json
+{"status":"ok"}
+```
+
 ### Frontend
 
 ```bash
 cd frontend
 npm install
 npm run dev
+```
+
+Git Bash를 사용하는 경우:
+
+```bash
+cd /c/Users/SSAFY/Desktop/busanproject/frontend
+npm.cmd run dev
 ```
 
 배포 시 백엔드 API 주소는 환경변수로 설정합니다.
@@ -59,6 +84,65 @@ VITE_API_BASE_URL=https://your-render-api.onrender.com
 
 ```text
 http://127.0.0.1:5173/
+```
+
+### 서버 재시작
+
+서버를 실행 중인 터미널에서 `Ctrl + C`를 눌러 종료한 뒤 같은 명령으로 다시 실행합니다.
+
+Backend 재시작:
+
+```bash
+cd /c/Users/SSAFY/Desktop/busanproject/backend
+uvicorn app.main:app --port 8000
+```
+
+Frontend 재시작:
+
+```bash
+cd /c/Users/SSAFY/Desktop/busanproject/frontend
+npm.cmd run dev
+```
+
+### 포트 충돌 해결
+
+이미 포트가 사용 중이면 다음 메시지가 나올 수 있습니다.
+
+```text
+Errno 10048
+각 소켓 주소는 하나만 사용할 수 있습니다
+```
+
+CMD 또는 PowerShell에서 포트를 사용하는 PID를 확인합니다.
+
+```powershell
+netstat -ano | findstr :8000
+netstat -ano | findstr :5173
+```
+
+`LISTENING` 줄 맨 오른쪽 PID를 종료합니다.
+
+```powershell
+taskkill /PID PID번호 /F
+```
+
+예시:
+
+```powershell
+taskkill /PID 10104 /F
+```
+
+프론트 포트만 충돌하면 다른 포트로 실행할 수도 있습니다.
+
+```bash
+cd /c/Users/SSAFY/Desktop/busanproject/frontend
+npm.cmd run dev -- --port 5174
+```
+
+이 경우 접속 주소는 다음과 같습니다.
+
+```text
+http://127.0.0.1:5174/
 ```
 
 ## 프로젝트 구조
@@ -83,4 +167,4 @@ legacy/     초기 HTML/CSS/JS 프로토타입
 
 - 최종 프론트엔드 기준은 `frontend/`입니다.
 - `legacy/`는 초기 프로토타입 보관용입니다.
-- OpenAI API 연동 전까지 `/api/chat`은 더미 응답을 반환합니다.
+- `backend/.env`에 `GEMINI_API_KEY`를 설정하면 `/api/chat`이 Gemini API로 답변을 생성합니다.
