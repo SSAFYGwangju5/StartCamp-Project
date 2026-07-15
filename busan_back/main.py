@@ -1,3 +1,4 @@
+from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -27,38 +28,38 @@ def preload_data():
         if not os.path.exists(data_dir):
             return
         
-        # 콘텐츠 유형 ID 매핑 테이블[cite: 2]
+        # 콘텐츠 유형 ID 매핑 테이블
         type_map = {
             "12": "관광지", "14": "문화시설", "15": "축제공연행사",
             "25": "여행코스", "28": "레포츠", "32": "숙박",
             "38": "쇼핑", "39": "음식점"
-        }[cite: 2]
+        }
 
         for file_name in os.listdir(data_dir):
             if file_name.endswith(".json"):
                 with open(os.path.join(data_dir, file_name), "r", encoding="utf-8") as f:
                     content = json.load(f)
-                    items = content.get("items", [])[cite: 2]
+                    items = content.get("items", [])
                     for item in items:
-                        # 위도 경도 예외처리 및 형변환[cite: 2]
+                        # 위도 경도 예외처리 및 형변환
                         try:
-                            mx = float(item.get("mapx")) if item.get("mapx") else 0.0[cite: 2]
-                            my = float(item.get("mapy")) if item.get("mapy") else 0.0[cite: 2]
+                            mx = float(item.get("mapx")) if item.get("mapx") else 0.0
+                            my = float(item.get("mapy")) if item.get("mapy") else 0.0
                         except ValueError:
                             mx, my = 0.0, 0.0
 
-                        ct_id = item.get("contenttypeid", "12")[cite: 2]
+                        ct_id = item.get("contenttypeid", "12")
                         loc = models.Location(
-                            contentid=item.get("contentid"),[cite: 2]
-                            contenttypeid=ct_id,[cite: 2]
+                            contentid=item.get("contentid"),
+                            contenttypeid=ct_id,
                             content_type_name=type_map.get(ct_id, "기타"),
-                            title=item.get("title"),[cite: 2]
-                            addr1=item.get("addr1", ""),[cite: 2]
-                            addr2=item.get("addr2", ""),[cite: 2]
-                            tel=item.get("tel", ""),[cite: 2]
+                            title=item.get("title"),
+                            addr1=item.get("addr1", ""),
+                            addr2=item.get("addr2", ""),
+                            tel=item.get("tel", ""),
                             mapx=mx,                          # 키워드 인자 선언 확인
                             mapy=my,                          # 반드시 앞에 'mapy=' 가 누락되지 않았는지 체크!
-                            firstimage=item.get("firstimage", "")[cite: 2]
+                            firstimage=item.get("firstimage", "")
                         )
                         db.merge(loc)
         db.commit()
@@ -133,7 +134,7 @@ def chat_bot(payload: schemas.ChatRequest, db: Session = Depends(get_db)):
         "제공된 데이터베이스 컨텍스트 정보를 최우선으로 참고하여 사용자의 질문에 정확하고 친절하게 답변해줘.\n"
         "출처 요구 시 반드시 '출처: 한국관광공사 TourAPI 4.0' 및 '라이선스: 공공누리 제3유형' 명세를 누락 없이 안내해야 해.\n"
         f"익명 커뮤니티 게시글 검색이나 관광지 추천 요청 시에도 적극 대응해줘.\n{context_str}"
-    )[cite: 1, 3]
+    )
 
     messages = [{"role": "system", "content": system_prompt}]
     for h in payload.history:

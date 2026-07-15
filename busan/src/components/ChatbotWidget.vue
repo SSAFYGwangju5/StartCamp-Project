@@ -41,7 +41,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, nextTick, onMounted, onUnmounted } from 'vue';
-import { ChatMessage } from '../types';
+import type { ChatMessage } from '../types';
 
 export default defineComponent({
   name: 'ChatbotWidget',

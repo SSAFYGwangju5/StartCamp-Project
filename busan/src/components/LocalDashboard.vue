@@ -21,7 +21,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue';
-import { LocationStat } from '../types';
+import type { LocationStat } from '../types';
 
 export default defineComponent({
   name: 'LocalDashboard',
