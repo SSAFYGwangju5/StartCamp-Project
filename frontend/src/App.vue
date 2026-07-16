@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, reactive, ref } from "vue";
 import { apiRequest } from "./api/client";
+import KakaoMap from "./components/KakaoMap.vue";
 
 const spotCategories = [
   { id: "tourist", label: "관광지" },
@@ -299,6 +300,10 @@ selectView("spots");
                 <button class="write-button" type="button" @click="backToPlaceList">목록으로</button>
               </div>
             </div>
+          </article>
+
+          <article v-if="selectedPlace" class="place-map">
+            <KakaoMap />
           </article>
 
           <template v-else>
