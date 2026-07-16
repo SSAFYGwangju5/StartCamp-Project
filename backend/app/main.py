@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import logging
 import os
 from pathlib import Path
 import time
@@ -21,6 +22,7 @@ PROJECT_DIR = Path(__file__).resolve().parents[2]
 load_dotenv(BACKEND_DIR / ".env")
 
 app = FastAPI(title="Busan LocalHub API")
+logger = logging.getLogger("busan-localhub")
 
 default_origins = [
     "http://127.0.0.1:5173",
@@ -171,6 +173,20 @@ def should_use_search(message: str):
     return any(keyword in message for keyword in search_keywords)
 
 
+def is_food_question(message: str):
+    return any(keyword in message for keyword in ["맛집", "음식", "식당", "밥", "카페", "먹거리", "가볼만한 곳"])
+
+
+def fallback_food_answer():
+    return (
+        "지금 AI 검색 응답이 불안정해서 기본 추천으로 안내할게요.\n"
+        "1. 국제시장 먹자골목: 씨앗호떡, 분식, 길거리 음식을 함께 둘러보기 좋아요.\n"
+        "2. 청사포 횟집촌: 바다 근처에서 해산물이나 회를 먹기 좋은 권역이에요.\n"
+        "3. 금정산성마을 먹거리촌: 산책이나 등산 후 막걸리와 향토 음식을 즐기기 좋아요.\n"
+        "운영시간과 휴무는 방문 전에 한 번 더 확인해 주세요."
+    )
+
+
 @app.get("/api/posts", response_model=list[PostListItem])
 def list_posts(db: Session = Depends(get_db)):
     posts = db.scalars(select(Post).order_by(Post.id.desc())).all()
@@ -282,12 +298,27 @@ def chat(payload: ChatRequest):
                 break
             except Exception as exc:
                 last_error = exc
+                logger.warning(
+                    "Gemini generate_content failed. attempt=%s model=%s use_search=%s error=%r",
+                    attempt + 1,
+                    model,
+                    use_search,
+                    exc,
+                )
                 if "503" not in str(exc) and "UNAVAILABLE" not in str(exc):
                     raise
                 if attempt == 0:
                     time.sleep(1)
 
         if response is None:
+            logger.error(
+                "Gemini returned no response. model=%s use_search=%s last_error=%r",
+                model,
+                use_search,
+                last_error,
+            )
+            if is_food_question(message):
+                return {"answer": fallback_food_answer()}
             return {
                 "answer": (
                     "현재 Gemini 응답이 일시적으로 지연되고 있습니다. "
@@ -298,6 +329,9 @@ def chat(payload: ChatRequest):
         answer = (response.text or "").strip()
         return {"answer": answer or "답변을 생성하지 못했습니다. 다시 질문해 주세요."}
     except Exception as exc:
+        logger.exception("Chat answer generation failed. model=%s message=%r", model, message)
+        if is_food_question(message):
+            return {"answer": fallback_food_answer()}
         return {
             "answer": (
                 "챗봇 답변 생성 중 오류가 발생했습니다. "
