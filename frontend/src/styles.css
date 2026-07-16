@@ -24,14 +24,14 @@ textarea {
 }
 
 .hero {
-  min-height: 220px;
+  min-height: 210px;
   display: flex;
   align-items: end;
   padding: 32px;
   color: white;
   background:
-    linear-gradient(90deg, rgba(10, 28, 33, 0.78), rgba(10, 28, 33, 0.2)),
-    url("https://tong.visitkorea.or.kr/cms/resource/34/3090534_image2_1.JPG") center 54%/cover;
+    linear-gradient(90deg, rgba(8, 32, 38, 0.72), rgba(8, 32, 38, 0.14)),
+    #0f7c70 url("/images/busan-hero.jpg") center 50%/cover;
   border: 1px solid #d7dfdb;
   border-radius: 8px;
 }
