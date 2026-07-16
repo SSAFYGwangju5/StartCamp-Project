@@ -238,6 +238,16 @@ h2 {
   text-decoration: underline;
 }
 
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.load-more-row .secondary-button {
+  min-width: 140px;
+}
+
 .place-detail {
   display: grid;
   grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1fr);

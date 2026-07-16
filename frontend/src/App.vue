@@ -27,7 +27,9 @@ const fallbackImages = {
   courses: "http://tong.visitkorea.or.kr/cms/resource/83/2364283_image2_1.jpg",
 };
 
-const excludedTitleKeywords = ["성형외과", "의원", "주식회사"];
+const excludedTitleKeywords = ["성형외과", "주식회사"];
+const initialVisibleCount = 24;
+const visibleCount = ref(initialVisibleCount);
 
 const currentView = ref("spots");
 const spotCategory = ref("tourist");
@@ -56,6 +58,13 @@ const countLabel = computed(() => {
   }
   if (selectedPlace.value) return "상세 정보";
   return loadingText.value;
+});
+const visibleItems = computed(() => currentItems.value.slice(0, visibleCount.value));
+const hasMoreItems = computed(() => visibleCount.value < currentItems.value.length);
+const visibleSummary = computed(() => {
+  const total = currentItems.value.length;
+  const shown = Math.min(visibleCount.value, total);
+  return total ? `검색 결과 ${total.toLocaleString()}건 중 ${shown.toLocaleString()}건 표시` : "검색 결과 0건";
 });
 
 function tourCategoryForView() {
@@ -98,6 +107,7 @@ async function loadTourData() {
   selectedPlace.value = null;
   errorText.value = "";
   loadingText.value = "불러오는 중";
+  visibleCount.value = initialVisibleCount;
   const category = tourCategoryForView();
   const cacheKey = currentView.value === "spots" ? `spots:${category}` : currentView.value;
 
@@ -118,6 +128,7 @@ async function loadTourData() {
 async function selectView(view) {
   currentView.value = view;
   searchKeyword.value = "";
+  visibleCount.value = initialVisibleCount;
   selectedPlace.value = null;
   selectedPost.value = null;
   communityMode.value = "list";
@@ -132,14 +143,20 @@ async function selectView(view) {
 async function selectSpotCategory(category) {
   spotCategory.value = category;
   searchKeyword.value = "";
+  visibleCount.value = initialVisibleCount;
   await loadTourData();
 }
 
 async function applySearch() {
+  visibleCount.value = initialVisibleCount;
   const cacheKey = currentView.value === "spots" ? `spots:${spotCategory.value}` : currentView.value;
   const items = filterItems(cache[cacheKey]?.items || []);
   currentItems.value = items;
   loadingText.value = `${items.length.toLocaleString()}건`;
+}
+
+function showMoreItems() {
+  visibleCount.value += 24;
 }
 
 function showPlaceDetail(item) {
@@ -324,7 +341,7 @@ selectView("spots");
                   @input="applySearch"
                 />
               </label>
-              <p class="result-summary">검색 결과 {{ currentItems.length.toLocaleString() }}건</p>
+              <p class="result-summary">{{ visibleSummary }}</p>
             </div>
 
             <div v-if="errorText" class="empty-state">{{ errorText }}</div>
@@ -339,7 +356,7 @@ selectView("spots");
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="item in currentItems.slice(0, 15)" :key="item.contentid">
+                <tr v-for="item in visibleItems" :key="item.contentid">
                   <td><button class="link-button" type="button" @click="showPlaceDetail(item)">{{ item.title }}</button></td>
                   <td>{{ formatDate(item.eventstartdate) }} ~ {{ formatDate(item.eventenddate) }}</td>
                   <td>{{ item.eventplace || item.addr1 || "-" }}</td>
@@ -349,7 +366,7 @@ selectView("spots");
             </table>
 
             <div v-else class="card-grid">
-              <article v-for="item in currentItems.slice(0, 12)" :key="item.contentid" class="place-card">
+              <article v-for="item in visibleItems" :key="item.contentid" class="place-card">
                 <img :src="imageFor(item)" :alt="item.title" loading="lazy" />
                 <div class="place-card-content">
                   <h3>{{ item.title }}</h3>
@@ -357,6 +374,10 @@ selectView("spots");
                   <button class="detail-button" type="button" @click="showPlaceDetail(item)">상세 보기</button>
                 </div>
               </article>
+            </div>
+
+            <div v-if="hasMoreItems" class="load-more-row">
+              <button class="secondary-button" type="button" @click="showMoreItems">더 보기</button>
             </div>
           </template>
         </template>
