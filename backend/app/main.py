@@ -85,6 +85,7 @@ def health():
 def build_tour_context(message: str):
     data_dir = PROJECT_DIR / "busan"
     context_parts = []
+    normalized_message = message.replace(" ", "").replace("박랍회", "박람회")
     category_files = {
         "관광지": "부산_관광지.json",
         "문화시설": "부산_문화시설.json",
@@ -96,7 +97,7 @@ def build_tour_context(message: str):
     }
     keyword_map = {
         "숙박": ["숙박", "호텔", "숙소", "잠", "1박", "게스트"],
-        "축제공연행사": ["축제", "행사", "공연", "페스티벌"],
+        "축제공연행사": ["축제", "행사", "공연", "페스티벌", "박람회", "박랍회", "기간", "언제"],
         "여행코스": ["코스", "일정", "루트", "당일치기"],
         "문화시설": ["문화", "박물관", "미술관", "실내", "비"],
         "쇼핑": ["쇼핑", "시장", "기념품", "가게"],
@@ -122,12 +123,27 @@ def build_tour_context(message: str):
         file_name = category_files[category]
         data = json.loads((data_dir / file_name).read_text(encoding="utf-8"))
         item_summaries = []
-        for item in data.get("items", [])[:15]:
+        items = data.get("items", [])
+        matched_items = []
+        for item in items:
+            title = item.get("title", "")
+            normalized_title = title.replace(" ", "").replace("박랍회", "박람회")
+            title_terms = [term for term in normalized_title.replace("2026", "").replace("2025", "").split("/") if len(term) >= 3]
+            if normalized_title and (normalized_title in normalized_message or any(term and term in normalized_message for term in title_terms)):
+                matched_items.append(item)
+
+        summary_items = matched_items[:8] + [item for item in items[:15] if item not in matched_items]
+        for item in summary_items[:20]:
             title = item.get("title", "")
             address = item.get("addr1", "")
             event_place = item.get("eventplace", "")
             if title:
                 detail = event_place or address
+                if category == "축제공연행사":
+                    start_date = item.get("eventstartdate", "")
+                    end_date = item.get("eventenddate", "")
+                    if start_date and end_date:
+                        detail = f"{start_date[:4]}.{start_date[4:6]}.{start_date[6:8]}~{end_date[:4]}.{end_date[4:6]}.{end_date[6:8]}, {detail}"
                 item_summaries.append(f"{title}({detail})" if detail else title)
         context_parts.append(f"{data.get('contentType')}: {', '.join(item_summaries)}")
 
